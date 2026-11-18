@@ -1,0 +1,731 @@
+{
+  "name": "Customer Feedback Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Share Your Feedback",
+        "formDescription": "Thank you for doing business with us! Please rate your experience from 1 (very poor) to 5 (excellent).",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Customer Name",
+              "placeholder": "Full Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Product or Service",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Rating",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "1"
+                  },
+                  {
+                    "option": "2"
+                  },
+                  {
+                    "option": "3"
+                  },
+                  {
+                    "option": "4"
+                  },
+                  {
+                    "option": "5"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Comments",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Thank you! Your feedback has been received."
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -288,
+        48
+      ],
+      "id": "e8c40ba2-7736-4737-8754-50d6bf0bfc21",
+      "name": "Feeback Form",
+      "webhookId": "33249bca-1462-494d-912e-3ea71b5f32e6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3edac7e6-6c4d-499e-bd61-d61f19b8fb9f",
+              "name": "feedbackId",
+              "value": "=FB-{{ $now.toFormat('yyyyMMdd-HHmmss') }}-{{ Math.floor(Math.random() * 900 + 100) }}",
+              "type": "string"
+            },
+            {
+              "id": "9fbc3303-aa27-4b2a-8f34-57e4bfd08183",
+              "name": "timestamp",
+              "value": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "id": "db7bbd63-874b-4ca9-8375-19468a6f76fb",
+              "name": "customerName",
+              "value": "={{ $json['Customer Name'].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "137cbc25-9c8a-4dda-93d2-b462d4f5c090",
+              "name": "email",
+              "value": "={{ $json['Email'].trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "b0c9c399-0647-4887-8ef8-ee7a5df6c80f",
+              "name": "product",
+              "value": "={{ $json['Product or Service'].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "681c54db-ea40-4b9c-a07d-1c3110995664",
+              "name": "rating",
+              "value": "={{ Number($json['Rating']) }}",
+              "type": "number"
+            },
+            {
+              "id": "5e1dcf05-8c89-483d-97cc-eaab6f611d36",
+              "name": "comments",
+              "value": "={{ ($json['Comments'] || '').trim() || 'No comment provided' }}",
+              "type": "string"
+            },
+            {
+              "id": "803847cd-5c3a-46a3-96a9-e343043cbefc",
+              "name": "sentiment",
+              "value": "={{ Number($json['Rating']) >= 4 ? 'Positive' : Number($json['Rating']) === 3 ? 'Neutral' : 'Negative'}}",
+              "type": "string"
+            },
+            {
+              "id": "20f498d2-feaa-48d0-bb58-33190a053bd1",
+              "name": "alertSent",
+              "value": "No",
+              "type": "string"
+            },
+            {
+              "id": "bb579974-6e4d-48b2-a2ea-9148fb9f4f82",
+              "name": "status",
+              "value": "={{ Number($json['Rating']) <= 2 ? 'Follow-up needed' : 'No action needed' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -64,
+        48
+      ],
+      "id": "194a78cc-0564-4822-9e88-9ca0869b51bd",
+      "name": "Prepare Feedback Data"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Customer Feedback Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feedback",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Feedback ID": "={{ $json.feedbackId }}",
+            "Timestamp": "={{ $json.timestamp }}",
+            "Customer Name": "={{ $json.customerName }}",
+            "Email": "={{ $json.email }}",
+            "Product/Service": "={{ $json.product }}",
+            "Rating": "={{ $json.rating }}",
+            "Comments": "={{ $json.comments }}",
+            "Sentiment": "={{ $json.sentiment }}",
+            "Alert Sent": "={{ $json.alertSent }}",
+            "Status": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Feedback ID",
+              "displayName": "Feedback ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product/Service",
+              "displayName": "Product/Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rating",
+              "displayName": "Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Comments",
+              "displayName": "Comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sentiment",
+              "displayName": "Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Alert Sent",
+              "displayName": "Alert Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        160,
+        48
+      ],
+      "id": "88806d11-d2d0-4594-b3ef-8bc252ea3eae",
+      "name": "Log Feedback to Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEET_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Prepare Feedback Data').item.json.sentiment }}",
+                    "rightValue": "Positive",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "513213d2-1018-4f26-a669-c489696e074f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Positive"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "17b14dd3-da4d-450d-b5fb-aeb141ada790",
+                    "leftValue": "={{ $('Prepare Feedback Data').item.json.sentiment }}",
+                    "rightValue": "Neutral",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Neutral"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "b0e68273-6314-4ea5-83c1-13c18ebbbd5f",
+                    "leftValue": "={{ $('Prepare Feedback Data').item.json.sentiment }}",
+                    "rightValue": "Negative",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Negative"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        384,
+        16
+      ],
+      "id": "e661ac26-58e7-45c0-b4c1-1da1859625b8",
+      "name": "Route by Sentiment"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Feedback Data').item.json.email }}",
+        "subject": "=Thank you for your feedback, {{ $('Prepare Feedback Data').item.json.customerName }}!",
+        "message": "=<p>Hi {{ $('Prepare Feedback Data').item.json.customerName }},</p> \n\n<p>Thank you for rating your experience with our <b>{{ $('Prepare Feedback Data').item.json.product }}</b> service <b>{{ $('Prepare Feedback Data').item.json.rating }}/5</b>. We're delighted you had a great experience!</p> \n\n<p>We look forward to serving you again.</p> \n\n<p>Warm regards,<br>Your Business Name</p> \n\n<p style=\"color:#888;font-size:12px;\">Reference: {{ $('Prepare Feedback Data').item.json.feedbackId }}</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        -176
+      ],
+      "id": "6b072e33-2437-4d7b-a39b-42580caf7413",
+      "name": "Email: Thank You",
+      "webhookId": "94695560-1651-4bfa-bc44-861d7c104432",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Feedback Data').item.json.email }}",
+        "subject": "Thanks for your feedback - how can we do better?",
+        "message": "=<p>Hi {{ $('Prepare Feedback Data').item.json.customerName }},</p>\n<p>Thank you for rating your experience with our <b>{{ $('Prepare Feedback Data').item.json.product }}</b> service <b>{{ $('Prepare Feedback Data').item.json.rating }}/5</b>.</p>\n<p>We want every customer to leave happy. If you have a moment, simply <b>reply to this email</b> and tell us one thing we could do better. We read every response.</p>\n<p>Warm regards,<br>Your Business Name</p>\n<p style=\"color:#888;font-size:12px;\">Reference: {{ $('Prepare Feedback Data').item.json.feedbackId }}</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        32
+      ],
+      "id": "f4fb6127-0f11-42aa-bc24-80403182a174",
+      "name": "Email: Request Suggestions",
+      "webhookId": "b51bec36-a0dd-4068-9ac1-907a03bd2acd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Feedback Data').item.json.email }}",
+        "subject": "We're sorry about your experience",
+        "message": "=<p>Hi {{ $('Prepare Feedback Data').item.json.customerName }},</p> \n\n<p>Thank you for your honest feedback about our <b>{{ $('Prepare Feedback Data').item.json.product }}</b> service. We're sorry it didn't meet your expectations.</p> \n\n<p>A member of our team has been notified and will contact you <b>within 24 hours</b> to make things right.</p> \n\n<p>Sincerely,<br>Your Business Name</p> \n\n<p style=\"color:#888;font-size:12px;\">Reference: {{ $('Prepare Feedback Data').item.json.feedbackId }}</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        608,
+        240
+      ],
+      "id": "0653b76a-83b7-4a78-ac0c-b3a59f975de1",
+      "name": "Email: Apology",
+      "webhookId": "795f4e1e-8d94-4656-af30-4e06c21e6488",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "5994594978",
+        "text": "=🚨 NEGATIVE FEEDBACK RECEIVED\n\nID: {{ $('Prepare Feedback Data').item.json.feedbackId }}\nCustomer: {{ $('Prepare Feedback Data').item.json.customerName }}\nEmail: {{ $('Prepare Feedback Data').item.json.email }}\nProduct/Service: {{ $('Prepare Feedback Data').item.json.product }}\nRating: {{ $('Prepare Feedback Data').item.json.rating }}/5\nComment: {{ $('Prepare Feedback Data').item.json.comments }}\nTime: {{ $('Prepare Feedback Data').item.json.timestamp }}\n\nPlease follow up within 24 hours.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        240
+      ],
+      "id": "e4533f24-25e1-4a8e-a711-a6d8d350517e",
+      "name": "Alert Owner on Telegram",
+      "webhookId": "5e59c0aa-2249-40ac-a691-da01a381ca03",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CHAT_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Customer Feedback Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feedback",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Feedback ID": "={{ $('Prepare Feedback Data').item.json.feedbackId }}",
+            "Alert Sent": "Yes"
+          },
+          "matchingColumns": [
+            "Feedback ID"
+          ],
+          "schema": [
+            {
+              "id": "Feedback ID",
+              "displayName": "Feedback ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Product/Service",
+              "displayName": "Product/Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Rating",
+              "displayName": "Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Comments",
+              "displayName": "Comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sentiment",
+              "displayName": "Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Alert Sent",
+              "displayName": "Alert Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1056,
+        240
+      ],
+      "id": "78f81897-7bde-4a8c-8123-b6bf209ea3d1",
+      "name": "Mark Alert as Sent",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEET_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Feeback Form": {
+      "main": [
+        [
+          {
+            "node": "Prepare Feedback Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Feedback Data": {
+      "main": [
+        [
+          {
+            "node": "Log Feedback to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Feedback to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Route by Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Email: Thank You",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Request Suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Apology",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email: Apology": {
+      "main": [
+        [
+          {
+            "node": "Alert Owner on Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Owner on Telegram": {
+      "main": [
+        [
+          {
+            "node": "Mark Alert as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "0Lpw4vwcXaZ3z8lQ",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "b5a3aa6e-2158-4a9e-ac0b-4b190db07253",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e3e49a7c484e16317819cf8949aaa15cd2ad789c2a78d924119022b5f367dec0"
+  },
+  "nodeGroups": [],
+  "id": "A1UW7QonL7umeKQh",
+  "tags": []
+}
